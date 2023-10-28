@@ -1,0 +1,131 @@
+import tkinter as tk
+import sqlite3
+
+
+def criar_tabela():
+    conexao = sqlite3.connect("produtos.db")
+    cursor = conexao.cursor()
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS produtos (
+            codigo INTEGER PRIMARY KEY,
+            nome TEXT,
+            preco REAL
+        )
+    ''')
+    conexao.commit()
+    conexao.close()
+
+
+def inserir_produto():
+    codigo = int(codigo_entry.get())
+    nome = nome_entry.get()
+    preco = float(preco_entry.get())
+
+    conexao = sqlite3.connect("produtos.db")
+    cursor = conexao.cursor()
+    cursor.execute("INSERT INTO produtos (codigo, nome, preco) VALUES (?, ?, ?)", (codigo, nome, preco))
+    conexao.commit()
+    conexao.close()
+    atualizar_lista()
+    limpar_campos()
+
+
+def atualizar_lista():
+    lista_produtos.delete(0, tk.END)
+    conexao = sqlite3.connect("produtos.db")
+    cursor = conexao.cursor()
+    cursor.execute("SELECT * FROM produtos")
+    produtos = cursor.fetchall()
+    for produto in produtos:
+        lista_produtos.insert(tk.END, f"Código: {produto[0]}, Nome: {produto[1]}, Preço: R${produto[2]:.2f}")
+    conexao.close()
+
+
+def selecionar_produto(event):
+    indice = lista_produtos.curselection()[0]
+    produto = lista_produtos.get(indice)
+    partes = produto.split(", ")
+    codigo = partes[0].split(": ")[1]
+    nome = partes[1].split(": ")[1]
+    preco = partes[2].split(": ")[1]
+    codigo_entry.delete(0, tk.END)
+    codigo_entry.insert(0, codigo)
+    nome_entry.delete(0, tk.END)
+    nome_entry.insert(0, nome)
+    preco_entry.delete(0, tk.END)
+    preco_entry.insert(0, preco)
+
+
+def atualizar_produto():
+    codigo = int(codigo_entry.get())
+    nome = nome_entry.get()
+    preco = float(preco_entry.get())
+
+    conexao = sqlite3.connect("produtos.db")
+    cursor = conexao.cursor()
+    cursor.execute("UPDATE produtos SET nome=?, preco=? WHERE codigo=?", (nome, preco, codigo))
+    conexao.commit()
+    conexao.close()
+    atualizar_lista()
+    limpar_campos()
+
+
+def excluir_produto():
+    codigo = int(codigo_entry.get())
+
+    conexao = sqlite3.connect("produtos.db")
+    cursor = conexao.cursor()
+    cursor.execute("DELETE FROM produtos WHERE codigo=?", (codigo,))
+    conexao.commit()
+    conexao.close()
+    atualizar_lista()
+    limpar_campos()
+
+
+def limpar_campos():
+    codigo_entry.delete(0, tk.END)
+    nome_entry.delete(0, tk.END)
+    preco_entry.delete(0, tk.END)
+
+
+janela = tk.Tk()
+janela.title("Sistema de Produtos")
+
+
+label_codigo = tk.Label(janela, text="Código:")
+label_codigo.grid(row=0, column=0)
+
+codigo_entry = tk.Entry(janela)
+codigo_entry.grid(row=0, column=1)
+
+label_nome = tk.Label(janela, text="Nome:")
+label_nome.grid(row=1, column=0)
+
+nome_entry = tk.Entry(janela)
+nome_entry.grid(row=1, column=1)
+
+label_preco = tk.Label(janela, text="Preço:")
+label_preco.grid(row=2, column=0)
+
+preco_entry = tk.Entry(janela)
+preco_entry.grid(row=2, column=1)
+
+inserir_button = tk.Button(janela, text="Inserir", command=inserir_produto)
+inserir_button.grid(row=3, column=0)
+
+atualizar_button = tk.Button(janela, text="Atualizar", command=atualizar_produto)
+atualizar_button.grid(row=3, column=1)
+
+excluir_button = tk.Button(janela, text="Excluir", command=excluir_produto)
+excluir_button.grid(row=3, column=2)
+
+lista_produtos = tk.Listbox(janela, height=10, width=40)
+lista_produtos.grid(row=4, column=0, columnspan=3)
+
+lista_produtos.bind('<<ListboxSelect>>', selecionar_produto)
+
+
+criar_tabela()
+atualizar_lista()
+
+janela.mainloop()
