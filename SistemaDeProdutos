@@ -1,131 +1,182 @@
 import tkinter as tk
-import sqlite3
+from tkinter import ttk
+import sqlite3 as conector
 
 
-def criar_tabela():
-    conexao = sqlite3.connect("produtos.db")
-    cursor = conexao.cursor()
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS produtos (
-            codigo INTEGER PRIMARY KEY,
-            nome TEXT,
-            preco REAL
-        )
-    ''')
-    conexao.commit()
-    conexao.close()
+conexao = conector.connect('base.db')
+cursor = conexao.cursor()
 
 
-def inserir_produto():
-    codigo = int(codigo_entry.get())
-    nome = nome_entry.get()
-    preco = float(preco_entry.get())
+tabela = "CREATE TABLE IF NOT EXISTS PRODUTOS (COD INTEGER, PROD TEXT, PRECO REAL, PRIMARY KEY(COD));"
 
-    conexao = sqlite3.connect("produtos.db")
-    cursor = conexao.cursor()
-    cursor.execute("INSERT INTO produtos (codigo, nome, preco) VALUES (?, ?, ?)", (codigo, nome, preco))
-    conexao.commit()
-    conexao.close()
-    atualizar_lista()
-    limpar_campos()
+cursor.execute(tabela)
+print("Banco criado com sucesso!")
+conexao.commit()
 
 
-def atualizar_lista():
-    lista_produtos.delete(0, tk.END)
-    conexao = sqlite3.connect("produtos.db")
-    cursor = conexao.cursor()
-    cursor.execute("SELECT * FROM produtos")
-    produtos = cursor.fetchall()
-    for produto in produtos:
-        lista_produtos.insert(tk.END, f"Código: {produto[0]}, Nome: {produto[1]}, Preço: R${produto[2]:.2f}")
-    conexao.close()
+def cadastrar(cod,prod,preco):
+
+  for item in box.get_children():
+    box.delete(item)
+  
+  comando = "INSERT INTO PRODUTOS (COD, PROD, PRECO) VALUES (?,?,?);"
+
+  cursor.execute(comando, (cod, prod, preco))
+  print("Cadastrado com sucesso!")
+  conexao.commit()
+
+  query = "SELECT COD,PROD,PRECO FROM PRODUTOS;"
+  
+  cursor.execute(query)
+  lista_prod = cursor.fetchall()
+  lista(lista_prod)
+  conexao.commit()
 
 
-def selecionar_produto(event):
-    indice = lista_produtos.curselection()[0]
-    produto = lista_produtos.get(indice)
-    partes = produto.split(", ")
-    codigo = partes[0].split(": ")[1]
-    nome = partes[1].split(": ")[1]
-    preco = partes[2].split(": ")[1]
-    codigo_entry.delete(0, tk.END)
-    codigo_entry.insert(0, codigo)
-    nome_entry.delete(0, tk.END)
-    nome_entry.insert(0, nome)
-    preco_entry.delete(0, tk.END)
-    preco_entry.insert(0, preco)
+def cadastro():
+  cadastrar(cod.get(), prod.get(), preco.get())
 
 
-def atualizar_produto():
-    codigo = int(codigo_entry.get())
-    nome = nome_entry.get()
-    preco = float(preco_entry.get())
+def atualizar(cod,prod,preco):
 
-    conexao = sqlite3.connect("produtos.db")
-    cursor = conexao.cursor()
-    cursor.execute("UPDATE produtos SET nome=?, preco=? WHERE codigo=?", (nome, preco, codigo))
-    conexao.commit()
-    conexao.close()
-    atualizar_lista()
-    limpar_campos()
+  for item in box.get_children():
+    box.delete(item)
+  
+  comando = "UPDATE PRODUTOS SET COD = ?, PROD = ?, PRECO = ? WHERE COD = ?;"
 
+  cursor.execute(comando, (cod, prod, preco, cod))
+  print("Atualizado com sucesso!")
+  conexao.commit()
 
-def excluir_produto():
-    codigo = int(codigo_entry.get())
+  query = "SELECT COD,PROD,PRECO FROM PRODUTOS;"
 
-    conexao = sqlite3.connect("produtos.db")
-    cursor = conexao.cursor()
-    cursor.execute("DELETE FROM produtos WHERE codigo=?", (codigo,))
-    conexao.commit()
-    conexao.close()
-    atualizar_lista()
-    limpar_campos()
+  cursor.execute(query)
+  lista_prod = cursor.fetchall()
+  lista(lista_prod)
+  conexao.commit()
 
 
-def limpar_campos():
-    codigo_entry.delete(0, tk.END)
-    nome_entry.delete(0, tk.END)
-    preco_entry.delete(0, tk.END)
+def atualizacao():
+  atualizar(cod.get(), prod.get(), preco.get())
+
+
+def excluir(cod):
+
+  for item in box.get_children():
+    box.delete(item)
+  
+  comando = "DELETE FROM PRODUTOS WHERE COD = ?;"
+  
+  cursor.execute(comando, (cod,))
+  print("Produto excluido com sucesso!")
+  conexao.commit()
+
+  query = "SELECT COD,PROD,PRECO FROM PRODUTOS;"
+
+  cursor.execute(query)
+  lista_prod = cursor.fetchall()
+  lista(lista_prod)
+  conexao.commit()
+
+
+def exclusao():
+  excluir(cod.get())
+
+
+def buscar(cod):
+
+  for item in show.get_children():
+    show.delete(item)
+  
+  comando = "SELECT COD,PROD,PRECO FROM PRODUTOS WHERE COD = ?;"
+  
+  cursor.execute(comando, (cod,))
+  resultado = cursor.fetchall()
+  for result in resultado:
+    show.insert("", "end", values = result)
+
+
+def busca():
+  buscar(cod_busca.get()) 
+
+
+def limpar():
+  cod.delete(0, tk.END)
+  prod.delete(0, tk.END)
+  preco.delete(0, tk.END)
+  cod_busca.delete(0, tk.END)
+
+
+def lista(lista):
+  for valores in lista:
+    box.insert("", "end", values = valores)
 
 
 janela = tk.Tk()
-janela.title("Sistema de Produtos")
+janela.title("Produtos")
+janela.geometry("600x400+50+50")
+janela.resizable(False, False)
 
 
-label_codigo = tk.Label(janela, text="Código:")
-label_codigo.grid(row=0, column=0)
 
-codigo_entry = tk.Entry(janela)
-codigo_entry.grid(row=0, column=1)
+ttk.Label(janela,text="Pesquisar\n(código)").grid(column=0, row=0)
+cod_busca = tk.Entry(janela, width="12")
+cod_busca.grid(column=1, row=0)
 
-label_nome = tk.Label(janela, text="Nome:")
-label_nome.grid(row=1, column=0)
+ttk.Label(janela,text="Código do Produto:").grid(column=0, row=1)
+cod = tk.Entry(janela, width="12")
+cod.grid(column=1, row=1)
 
-nome_entry = tk.Entry(janela)
-nome_entry.grid(row=1, column=1)
+ttk.Label(janela,text="Nome do Produto:").grid(column=0, row=2)
+prod = tk.Entry(janela, width="12")
+prod.grid(column=1, row=2)
 
-label_preco = tk.Label(janela, text="Preço:")
-label_preco.grid(row=2, column=0)
-
-preco_entry = tk.Entry(janela)
-preco_entry.grid(row=2, column=1)
-
-inserir_button = tk.Button(janela, text="Inserir", command=inserir_produto)
-inserir_button.grid(row=3, column=0)
-
-atualizar_button = tk.Button(janela, text="Atualizar", command=atualizar_produto)
-atualizar_button.grid(row=3, column=1)
-
-excluir_button = tk.Button(janela, text="Excluir", command=excluir_produto)
-excluir_button.grid(row=3, column=2)
-
-lista_produtos = tk.Listbox(janela, height=10, width=40)
-lista_produtos.grid(row=4, column=0, columnspan=3)
-
-lista_produtos.bind('<<ListboxSelect>>', selecionar_produto)
+ttk.Label(janela,text="Preço:").grid(column=0, row=3)
+preco = tk.Entry(janela, width="12")
+preco.grid(column=1, row=3)
 
 
-criar_tabela()
-atualizar_lista()
+botao = tk.Button(janela,text="Cadastrar",width="10", command = cadastro)
+botao.grid(column=0, row=4)
+
+botao = tk.Button(janela,text="Atualizar",width="10", command = atualizacao)
+botao.grid(column=1, row=4)
+
+botao = tk.Button(janela,text="Excluir",width="10", command = exclusao)
+botao.grid(column=2, row=4)
+
+botao = tk.Button(janela,text="Buscar",width="10", command = busca)
+botao.grid(column=3, row=4)
+
+botao = tk.Button(janela,text="Limpar",width="10", command = limpar)
+botao.grid(column=4, row=4)
+
+
+query = "SELECT COD,PROD,PRECO FROM PRODUTOS;"
+cursor.execute(query)
+lista_prod = cursor.fetchall()
+conexao.commit()
+
+
+box = ttk.Treeview(janela, columns=("COD", "PROD", "PRECO"), show="headings")
+box.column("COD", anchor=tk.CENTER)
+box.column("PROD", anchor=tk.CENTER)
+box.column("PRECO", anchor=tk.CENTER)
+box.heading("COD", text="Código")
+box.heading("PROD", text="Nome")
+box.heading("PRECO", text="Preço")
+box.grid(column=0, row=5, columnspan=5, sticky="nsew")
+lista(lista_prod)
+
+
+show = ttk.Treeview(janela, columns=("COD", "PROD", "PRECO"), show="headings", height=1)
+show.column("COD", width=110, anchor=tk.CENTER)
+show.column("PROD", width=110, anchor=tk.CENTER)
+show.column("PRECO", width=110, anchor=tk.CENTER)
+show.heading("COD", text="Código")
+show.heading("PROD", text="Nome")
+show.heading("PRECO", text="Preço")
+show.grid(column=2, row=0, columnspan=5)
+
 
 janela.mainloop()
